@@ -22,19 +22,19 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ducke.backend.apirest.models.entity.Cliente;
 import com.ducke.backend.apirest.models.services.IClienteService;
 
-@CrossOrigin(origins = {"http://localhost:4200"})
+@CrossOrigin(origins = { "http://localhost:4200" })
 @RestController
 @RequestMapping("/api")
 public class ClienteRestController {
-	
+
 	@Autowired
 	private IClienteService clienteService;
-	
+
 	@GetMapping("/clientes")
 	public List<Cliente> index() {
 		return clienteService.findAll();
 	}
-	
+
 	@GetMapping("/clientes/{id}")
 	public ResponseEntity<?> show(@PathVariable Long id) {
 		Cliente cliente = null;
@@ -54,25 +54,38 @@ public class ClienteRestController {
 		}
 		return new ResponseEntity<>(cliente, HttpStatus.OK);
 	}
-	
+
 	@PostMapping("/clientes")
-	@ResponseStatus(HttpStatus.CREATED)
-	public Cliente create(@RequestBody Cliente cliente) {
-		return clienteService.save(cliente);
+	public ResponseEntity<?> create(@RequestBody Cliente cliente) {
+		Cliente clienteNew = null;
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+			clienteNew = clienteService.save(cliente);
+		} catch (DataAccessException e) {
+			response.put("mensaje", "Error al realizar el insert en la base de datos.");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		response.put("mensaje", "El cliente ha sido creado con éxito.");
+		response.put("cliente", clienteNew);
+
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
 	}
-	
+
 	@PutMapping("/clientes/{id}")
 	@ResponseStatus(HttpStatus.CREATED)
 	public Cliente update(@RequestBody Cliente cliente, @PathVariable Long id) {
 		Cliente clienteActual = clienteService.findById(id);
-		
+
 		clienteActual.setApellido(cliente.getApellido());
 		clienteActual.setNombre(cliente.getNombre());
 		clienteActual.setEmail(cliente.getEmail());
-		
+
 		return clienteService.save(clienteActual);
 	}
-	
+
 	@DeleteMapping("/clientes/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@PathVariable Long id) {
